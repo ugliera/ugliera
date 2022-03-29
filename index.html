@@ -6,83 +6,8 @@
         <meta name="viewport" content="initial-scale=1,user-scalable=no,maximum-scale=1,width=device-width">
         <meta name="mobile-web-app-capable" content="yes">
         <meta name="apple-mobile-web-app-capable" content="yes">
-        <link rel="stylesheet" href="./resources/ol.css">
-        <link rel="stylesheet" href="resources/fontawesome-all.min.css">
-        <link rel="stylesheet" href="./resources/ol-layerswitcher.css">
-        <link rel="stylesheet" href="./resources/qgis2web.css">
-<style>
-.search-layer {
-  top: 100px;
-  left: .5em;
-}
-.ol-touch .search-layer {
-  top: 130px;
-}
-</style>
-        <style>
-        html, body {
-            background-color: #ffffff;
-        }
-        .ol-control button {
-            background-color: #f8f8f8 !important;
-            color: #000000 !important;
-            border-radius: 0px !important;
-        }
-        .ol-zoom, .geolocate, .gcd-gl-control .ol-control {
-            background-color: rgba(255,255,255,.4) !important;
-            padding: 3px !important;
-        }
-        .ol-scale-line {
-            background: none !important;
-        }
-        .ol-scale-line-inner {
-            border: 2px solid #f8f8f8 !important;
-            border-top: none !important;
-            background: rgba(255, 255, 255, 0.5) !important;
-            color: black !important;
-        }
-        </style>
-<style>
-.tooltip {
-  position: relative;
-  background: rgba(0, 0, 0, 0.5);
-  border-radius: 4px;
-  color: white;
-  padding: 4px 8px;
-  opacity: 0.7;
-  white-space: nowrap;
-}
-.tooltip-measure {
-  opacity: 1;
-  font-weight: bold;
-}
-.tooltip-static {
-  background-color: #ffcc33;
-  color: black;
-  border: 1px solid white;
-}
-.tooltip-measure:before,
-.tooltip-static:before {
-  border-top: 6px solid rgba(0, 0, 0, 0.5);
-  border-right: 6px solid transparent;
-  border-left: 6px solid transparent;
-  content: "";
-  position: absolute;
-  bottom: -6px;
-  margin-left: -7px;
-  left: 50%;
-}
-.tooltip-static:before {
-  border-top-color: #ffcc33;
-}
-.measure-control {
-  top: 65px;
-  left: .5em;
-}
-.ol-touch .measure-control {
-  top: 80px;
-}
-</style>
+        <link rel="stylesheet" href="css/leaflet.css">
+        <link rel="stylesheet" href="css/qgis2web.css"><link rel="stylesheet" href="css/fontawesome-all.min.css">
         <style>
         html, body, #map {
             width: 100%;
@@ -91,24 +16,320 @@
             margin: 0;
         }
         </style>
-        <title></title>
+        <title>Part de la surface agricole utile (SAU) conscrée à l'agriculture biologique</title>
     </head>
     <body>
         <div id="map">
-            <div id="popup" class="ol-popup">
-                <a href="#" id="popup-closer" class="ol-popup-closer"></a>
-                <div id="popup-content"></div>
-            </div>
         </div>
-        <script src="resources/qgis2web_expressions.js"></script>
-        <script src="resources/polyfills.js"></script>
-        <script src="./resources/functions.js"></script>
-        <script src="./resources/ol.js"></script>
-        <script src="./resources/ol-layerswitcher.js"></script>
-        <script src="layers/COMMUNE_1.js"></script><script src="layers/CHEF_LIEU_2.js"></script>
-        <script src="styles/COMMUNE_1_style.js"></script><script src="styles/CHEF_LIEU_2_style.js"></script>
-        <script src="./layers/layers.js" type="text/javascript"></script> 
-        <script src="./resources/Autolinker.min.js"></script>
-        <script src="./resources/qgis2web.js"></script>
+        <script src="js/qgis2web_expressions.js"></script>
+        <script src="js/leaflet.js"></script>
+        <script src="js/leaflet.rotatedMarker.js"></script>
+        <script src="js/leaflet.pattern.js"></script>
+        <script src="js/leaflet-hash.js"></script>
+        <script src="js/Autolinker.min.js"></script>
+        <script src="js/rbush.min.js"></script>
+        <script src="js/labelgun.min.js"></script>
+        <script src="js/labels.js"></script>
+        <script src="data/prefecturessousprefectures_0.js"></script>
+        <script src="data/depart_r76_1.js"></script>
+        <script src="data/partabdanslasau_20101174_3.js"></script>
+        <script src="data/partabdanslasau_20202932_4.js"></script>
+        <script>
+        var highlightLayer;
+        function highlightFeature(e) {
+            highlightLayer = e.target;
+            highlightLayer.openPopup();
+        }
+        var map = L.map('map', {
+            zoomControl:true, maxZoom:28, minZoom:1
+        }).fitBounds([[42.32800013467948,0.7592282723701903],[44.839933647312115,4.298559799438813]]);
+        var hash = new L.Hash(map);
+        map.attributionControl.setPrefix('<a href="https://github.com/tomchadwin/qgis2web" target="_blank">qgis2web</a> &middot; <a href="https://leafletjs.com" title="A JS library for interactive maps">Leaflet</a> &middot; <a href="https://qgis.org">QGIS</a>');
+        var autolinker = new Autolinker({truncate: {length: 30, location: 'smart'}});
+        var bounds_group = new L.featureGroup([]);
+        function setBounds() {
+        }
+        function pop_prefecturessousprefectures_0(feature, layer) {
+            layer.on({
+                mouseout: function(e) {
+                    if (typeof layer.closePopup == 'function') {
+                        layer.closePopup();
+                    } else {
+                        layer.eachLayer(function(feature){
+                            feature.closePopup()
+                        });
+                    }
+                },
+                mouseover: highlightFeature,
+            });
+            var popupContent = '<table>\
+                    <tr>\
+                        <td colspan="2"><strong>NOM_COMM</strong><br />' + (feature.properties['NOM_COMM'] !== null ? autolinker.link(feature.properties['NOM_COMM'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            layer.bindPopup(popupContent, {maxHeight: 400});
+        }
+
+        function style_prefecturessousprefectures_0_0() {
+            return {
+                pane: 'pane_prefecturessousprefectures_0',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(12,12,12,1.0)',
+                interactive: true,
+            }
+        }
+        map.createPane('pane_prefecturessousprefectures_0');
+        map.getPane('pane_prefecturessousprefectures_0').style.zIndex = 400;
+        map.getPane('pane_prefecturessousprefectures_0').style['mix-blend-mode'] = 'normal';
+        var layer_prefecturessousprefectures_0 = new L.geoJson(json_prefecturessousprefectures_0, {
+            attribution: '',
+            interactive: true,
+            dataVar: 'json_prefecturessousprefectures_0',
+            layerName: 'layer_prefecturessousprefectures_0',
+            pane: 'pane_prefecturessousprefectures_0',
+            onEachFeature: pop_prefecturessousprefectures_0,
+            pointToLayer: function (feature, latlng) {
+                var context = {
+                    feature: feature,
+                    variables: {}
+                };
+                return L.circleMarker(latlng, style_prefecturessousprefectures_0_0(feature));
+            },
+        });
+        bounds_group.addLayer(layer_prefecturessousprefectures_0);
+        map.addLayer(layer_prefecturessousprefectures_0);
+        function pop_depart_r76_1(feature, layer) {
+            layer.on({
+                mouseout: function(e) {
+                    if (typeof layer.closePopup == 'function') {
+                        layer.closePopup();
+                    } else {
+                        layer.eachLayer(function(feature){
+                            feature.closePopup()
+                        });
+                    }
+                },
+                mouseover: highlightFeature,
+            });
+            var popupContent = '<table>\
+                    <tr>\
+                        <td colspan="2"><strong>NOM_DEP</strong><br />' + (feature.properties['NOM_DEP'] !== null ? autolinker.link(feature.properties['NOM_DEP'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            layer.bindPopup(popupContent, {maxHeight: 400});
+        }
+
+        function style_depart_r76_1_0() {
+            return {
+                pane: 'pane_depart_r76_1',
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0, 
+                fillOpacity: 0,
+                interactive: true,
+            }
+        }
+        map.createPane('pane_depart_r76_1');
+        map.getPane('pane_depart_r76_1').style.zIndex = 401;
+        map.getPane('pane_depart_r76_1').style['mix-blend-mode'] = 'normal';
+        var layer_depart_r76_1 = new L.geoJson(json_depart_r76_1, {
+            attribution: '',
+            interactive: true,
+            dataVar: 'json_depart_r76_1',
+            layerName: 'layer_depart_r76_1',
+            pane: 'pane_depart_r76_1',
+            onEachFeature: pop_depart_r76_1,
+            style: style_depart_r76_1_0,
+        });
+        bounds_group.addLayer(layer_depart_r76_1);
+        map.addLayer(layer_depart_r76_1);
+        map.createPane('pane_stamen_2');
+        map.getPane('pane_stamen_2').style.zIndex = 402;
+        var layer_stamen_2 = L.tileLayer('http://a.tile.stamen.com/toner/{z}/{x}/{y}.png', {
+            pane: 'pane_stamen_2',
+            opacity: 1.0,
+            attribution: '',
+            minZoom: 1,
+            maxZoom: 28,
+            minNativeZoom: 0,
+            maxNativeZoom: 18
+        });
+        layer_stamen_2;
+        map.addLayer(layer_stamen_2);
+        function pop_partabdanslasau_20101174_3(feature, layer) {
+            layer.on({
+                mouseout: function(e) {
+                    if (typeof layer.closePopup == 'function') {
+                        layer.closePopup();
+                    } else {
+                        layer.eachLayer(function(feature){
+                            feature.closePopup()
+                        });
+                    }
+                },
+                mouseover: highlightFeature,
+            });
+            var popupContent = '<table>\
+                    <tr>\
+                        <td colspan="2"><strong>Nom_Départ</strong><br />' + (feature.properties['Nom_Départ'] !== null ? autolinker.link(feature.properties['Nom_Départ'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2"><strong>Nom_Commun</strong><br />' + (feature.properties['Nom_Commun'] !== null ? autolinker.link(feature.properties['Nom_Commun'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2"><strong>SURF_ BIO</strong><br />' + (feature.properties['SURF_ BIO'] !== null ? autolinker.link(feature.properties['SURF_ BIO'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2"><strong>TOTAL_SAU</strong><br />' + (feature.properties['TOTAL_SAU'] !== null ? autolinker.link(feature.properties['TOTAL_SAU'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2"><strong>partAB/sau</strong><br />' + (feature.properties['partAB/sau'] !== null ? autolinker.link(feature.properties['partAB/sau'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            layer.bindPopup(popupContent, {maxHeight: 400});
+        }
+
+        function style_partabdanslasau_20101174_3_0() {
+            return {
+                pane: 'pane_partabdanslasau_20101174_3',
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(109,227,117,1.0)',
+                interactive: true,
+            }
+        }
+        map.createPane('pane_partabdanslasau_20101174_3');
+        map.getPane('pane_partabdanslasau_20101174_3').style.zIndex = 403;
+        map.getPane('pane_partabdanslasau_20101174_3').style['mix-blend-mode'] = 'normal';
+        var layer_partabdanslasau_20101174_3 = new L.geoJson(json_partabdanslasau_20101174_3, {
+            attribution: '',
+            interactive: true,
+            dataVar: 'json_partabdanslasau_20101174_3',
+            layerName: 'layer_partabdanslasau_20101174_3',
+            pane: 'pane_partabdanslasau_20101174_3',
+            onEachFeature: pop_partabdanslasau_20101174_3,
+            style: style_partabdanslasau_20101174_3_0,
+        });
+        bounds_group.addLayer(layer_partabdanslasau_20101174_3);
+        map.addLayer(layer_partabdanslasau_20101174_3);
+        function pop_partabdanslasau_20202932_4(feature, layer) {
+            layer.on({
+                mouseout: function(e) {
+                    if (typeof layer.closePopup == 'function') {
+                        layer.closePopup();
+                    } else {
+                        layer.eachLayer(function(feature){
+                            feature.closePopup()
+                        });
+                    }
+                },
+                mouseover: highlightFeature,
+            });
+            var popupContent = '<table>\
+                    <tr>\
+                        <td colspan="2"><strong>NOM_COM</strong><br />' + (feature.properties['NOM_COM'] !== null ? autolinker.link(feature.properties['NOM_COM'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2"><strong>NOM_DEP</strong><br />' + (feature.properties['NOM_DEP'] !== null ? autolinker.link(feature.properties['NOM_DEP'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2"><strong>SAU_TOT</strong><br />' + (feature.properties['SAU_TOT'] !== null ? autolinker.link(feature.properties['SAU_TOT'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2"><strong>SURF_BIO</strong><br />' + (feature.properties['SURF_BIO'] !== null ? autolinker.link(feature.properties['SURF_BIO'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2"><strong>PartAB_SAU</strong><br />' + (feature.properties['PartAB_SAU'] !== null ? autolinker.link(feature.properties['PartAB_SAU'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['PartAB_s_1'] !== null ? autolinker.link(feature.properties['PartAB_s_1'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            layer.bindPopup(popupContent, {maxHeight: 400});
+        }
+
+        function style_partabdanslasau_20202932_4_0() {
+            return {
+                pane: 'pane_partabdanslasau_20202932_4',
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(3,131,86,1.0)',
+                interactive: true,
+            }
+        }
+        map.createPane('pane_partabdanslasau_20202932_4');
+        map.getPane('pane_partabdanslasau_20202932_4').style.zIndex = 404;
+        map.getPane('pane_partabdanslasau_20202932_4').style['mix-blend-mode'] = 'normal';
+        var layer_partabdanslasau_20202932_4 = new L.geoJson(json_partabdanslasau_20202932_4, {
+            attribution: '',
+            interactive: true,
+            dataVar: 'json_partabdanslasau_20202932_4',
+            layerName: 'layer_partabdanslasau_20202932_4',
+            pane: 'pane_partabdanslasau_20202932_4',
+            onEachFeature: pop_partabdanslasau_20202932_4,
+            style: style_partabdanslasau_20202932_4_0,
+        });
+        bounds_group.addLayer(layer_partabdanslasau_20202932_4);
+        map.addLayer(layer_partabdanslasau_20202932_4);
+            var title = new L.Control();
+            title.onAdd = function (map) {
+                this._div = L.DomUtil.create('div', 'info');
+                this.update();
+                return this._div;
+            };
+            title.update = function () {
+                this._div.innerHTML = '<h2>Part de la surface agricole utile (SAU) conscrée à l\'agriculture biologique</h2>';
+            };
+            title.addTo(map);
+        var baseMaps = {};
+        L.control.layers(baseMaps,{'<img src="legend/partabdanslasau_20202932_4.png" /> part ab dans la sau_2020- (2932)': layer_partabdanslasau_20202932_4,'<img src="legend/partabdanslasau_20101174_3.png" /> part ab dans la sau_2010 - (1174)': layer_partabdanslasau_20101174_3,"stamen": layer_stamen_2,'<img src="legend/depart_r76_1.png" /> depart_r76': layer_depart_r76_1,'<img src="legend/prefecturessousprefectures_0.png" /> prefectures&sousprefectures': layer_prefecturessousprefectures_0,},{collapsed:false}).addTo(map);
+        setBounds();
+        var i = 0;
+        layer_prefecturessousprefectures_0.eachLayer(function(layer) {
+            var context = {
+                feature: layer.feature,
+                variables: {}
+            };
+            layer.bindTooltip((layer.feature.properties['NOM_COMM'] !== null?String('<div style="color: #000000; font-size: 10pt; font-family: \'MS Shell Dlg 2\', sans-serif;">' + layer.feature.properties['NOM_COMM']) + '</div>':''), {permanent: true, offset: [-0, -16], className: 'css_prefecturessousprefectures_0'});
+            labels.push(layer);
+            totalMarkers += 1;
+              layer.added = true;
+              addLabel(layer, i);
+              i++;
+        });
+        resetLabels([layer_prefecturessousprefectures_0]);
+        map.on("zoomend", function(){
+            resetLabels([layer_prefecturessousprefectures_0]);
+        });
+        map.on("layeradd", function(){
+            resetLabels([layer_prefecturessousprefectures_0]);
+        });
+        map.on("layerremove", function(){
+            resetLabels([layer_prefecturessousprefectures_0]);
+        });
+        </script>
     </body>
 </html>
